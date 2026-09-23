@@ -1,10 +1,11 @@
 // ==UserScript==
-// @name         ChatGPT RTL
+// @name         LLM RTL Fix (ChatGPT, Claude, DeepSeek, Qwen)
 // @namespace    http://chat.openai.com
 // @namespace    http://deepseek.com
-// @author       Alireza Farzaneh
-// @version      0.1.2.1
-// @description  Fixes the direction of RTL languages in LLM's interface
+// @namespace    http://claude.ai
+// @author       Alireza Farzaneh (Edited for Claude fix)
+// @version      0.1.3
+// @description  Fixes the direction of RTL languages in LLM's interface without breaking code blocks
 // @match        https://chat.openai.com/*
 // @match        https://chatgpt.com/*
 // @match        https://chat.deepseek.com/*
@@ -17,14 +18,28 @@
     "use strict";
     const RTL_REGEX = /[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
 
-    const styleId = 'deepseek-rtl-fix-style';
+    const styleId = 'llm-rtl-fix-style';
     if (!document.getElementById(styleId)) {
         const style = document.createElement('style');
         style.id = styleId;
         style.textContent = `
-            .deepseek-rtl-applied, .deepseek-rtl-applied * {
+            /* اعمال راست‌چین به متن اصلی */
+            .llm-rtl-applied {
                 direction: rtl !important;
                 text-align: right !important;
+            }
+            /* حفظ چپ‌چین برای بلوک‌های کد و کدهای درون‌خطی */
+            .llm-rtl-applied pre,
+            .llm-rtl-applied code,
+            .llm-rtl-applied kbd,
+            .llm-rtl-applied samp {
+                direction: ltr !important;
+                text-align: left !important;
+                unicode-bidi: isolate !important;
+            }
+            /* حفظ ثبات لینک‌ها و عناصر فنی */
+            .llm-rtl-applied a {
+                unicode-bidi: isolate !important;
             }
         `;
         document.head.appendChild(style);
@@ -40,11 +55,15 @@
         }
         if (!elem) return;
 
-        if (elem.closest('.deepseek-rtl-applied')) return;
+        // اگر قبلاً اعمال شده، دوباره انجام نده
+        if (elem.closest('.llm-rtl-applied')) return;
+
+        // اگر داخل تگ‌های کد یا پیش‌فرمت‌شده است، اصلاً راست‌چین نکن
+        if (elem.closest('pre') || elem.closest('code')) return;
 
         const txt = elem.textContent || "";
         if (RTL_REGEX.test(txt)) {
-            elem.classList.add('deepseek-rtl-applied');
+            elem.classList.add('llm-rtl-applied');
         }
     }
 
